@@ -9,14 +9,14 @@ Set up [Installua](https://github.com/idleberg/installua) in your GitHub workflo
 ## Usage
 
 ```yaml
-- uses: idleberg/setup-installua@v1
+- uses: idleberg/setup-installua@v0
 - run: installua build setup.lua
 ```
 
 With build options:
 
 ```yaml
-- uses: idleberg/setup-installua@v1
+- uses: idleberg/setup-installua@v0
   with:
     version: "latest"
     nsis-version: "latest"
