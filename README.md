@@ -23,13 +23,17 @@ With build options:
     advanced-logging: false
 ```
 
+> [!TIP]
+> Pin the action to a full commit SHA rather than a tag. A tag can be moved to
+> point at different code; a SHA cannot.
+
 ## Inputs
 
-| Name               | Default  | Description                                                     |
-| ------------------ | -------- | --------------------------------------------------------------- |
-| `version`          | `latest` | Installua version, e.g. `0.1.0`. `latest` resolves via crates.io. |
-| `large-strings`    | `false`  | `NSIS_MAX_STRLEN=8192`.                                         |
-| `advanced-logging` | `false`  | `NSIS_CONFIG_LOG=yes`.                                          |
+| Name               | Default  | Description                      |
+| ------------------ | -------- | -------------------------------- |
+| `version`          | `latest` | Installua version, e.g. `0.1.0`. |
+| `large-strings`    | `false`  | `NSIS_MAX_STRLEN=8192`.          |
+| `advanced-logging` | `false`  | `NSIS_CONFIG_LOG=yes`.           |
 
 > [!NOTE]
 > On Windows, `large-strings` and `advanced-logging` cannot be combined — see
