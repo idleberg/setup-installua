@@ -3,7 +3,7 @@ description: Set up Installua and the NSIS toolchain it compiles with
 
 branding:
   color: blue
-  icon: package
+  icon: gift
 
 inputs:
   version:
