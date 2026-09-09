@@ -19,7 +19,6 @@ With build options:
 - uses: idleberg/setup-installua@v0
   with:
     version: "latest"
-    nsis-version: "latest"
     large-strings: false
     advanced-logging: false
 ```
@@ -29,14 +28,8 @@ With build options:
 | Name               | Default  | Description                                                     |
 | ------------------ | -------- | --------------------------------------------------------------- |
 | `version`          | `latest` | Installua version, e.g. `0.1.0`. `latest` resolves via crates.io. |
-| `nsis-version`     | `latest` | NSIS version, `3.12` or newer. `latest` resolves via SourceForge. |
 | `large-strings`    | `false`  | `NSIS_MAX_STRLEN=8192`.                                         |
 | `advanced-logging` | `false`  | `NSIS_CONFIG_LOG=yes`.                                          |
-
-> [!NOTE]
-> Installua targets NSIS 3.12, so pinning `nsis-version` to anything older
-> fails the step rather than letting `makensis` fail later with an error that
-> does not name the real cause.
 
 > [!NOTE]
 > On Windows, `large-strings` and `advanced-logging` cannot be combined — see
@@ -55,6 +48,10 @@ Installua compiles to NSIS and hands the result to `makensis`, so this action
 runs [setup-nsis](https://github.com/nsis-dev/setup-nsis) first, then builds the
 Installua CLI from crates.io. Both are cached per OS, version and option
 combination, so only the first run pays the setup cost.
+
+The NSIS version is not yours to choose: every Installua release targets the
+latest NSIS, so that is what gets installed. The `nsis-version` output tells you
+which one that was.
 
 ## License
 

@@ -69,29 +69,10 @@ jobs:
         uses: ./
         with:
           version: "0.1.0"
-          nsis-version: "3.12"
 
-      - name: Check the pinned versions were used
+      - name: Check the pinned version was used
         shell: bash
         run: |
           set -euo pipefail
           [ "${{ steps.installua.outputs.version }}" = "0.1.0" ]
           installua --version | grep -q 0.1.0
-          makensis -VERSION | grep -q 3.12
-
-  old-nsis-rejected:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-
-      - name: Setup Installua against NSIS older than 3.12
-        id: installua
-        continue-on-error: true
-        uses: ./
-        with:
-          nsis-version: "3.10"
-
-      - name: Check the step failed
-        shell: bash
-        run: '[ "${{ steps.installua.outcome }}" = failure ]'

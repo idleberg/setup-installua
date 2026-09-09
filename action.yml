@@ -9,9 +9,6 @@ inputs:
   version:
     description: Installua version, e.g. 0.1.0, or "latest"
     default: latest
-  nsis-version:
-    description: NSIS version, 3.12 or newer, or "latest"
-    default: latest
   large-strings:
     description: NSIS_MAX_STRLEN=8192
     default: "false"
@@ -33,25 +30,13 @@ outputs:
 runs:
   using: composite
   steps:
-    # Ahead of the NSIS setup: a version this action rejects should fail before
-    # the expensive step, not after it
     - name: Resolve version and paths
       id: vars
       shell: bash
       env:
         VERSION: ${{ inputs.version }}
-        NSIS_VERSION: ${{ inputs.nsis-version }}
       run: |
         set -euo pipefail
-
-        # Installua targets NSIS 3.12; on anything older makensis fails deep in
-        # the build with an error that does not name the real cause
-        if [ "$NSIS_VERSION" != latest ] && [ -n "$NSIS_VERSION" ]; then
-          if [ "$(printf '%s\n' "${NSIS_VERSION#v}" 3.12 | sort -V | head -1)" != 3.12 ]; then
-            echo "Installua requires NSIS 3.12 or newer, got $NSIS_VERSION" >&2
-            exit 1
-          fi
-        fi
 
         # The cache key needs a concrete version, so "latest" gets resolved here
         # rather than left to cargo. crates.io rejects requests without a User-Agent.
@@ -72,12 +57,13 @@ runs:
         echo "prefix=$prefix" >> "$GITHUB_OUTPUT"
         echo "key=installua-${{ runner.os }}-${{ runner.arch }}-$VERSION" >> "$GITHUB_OUTPUT"
 
-    # Installua hands its output to makensis, so the compiler is part of the setup
+    # Installua hands its output to makensis, so the compiler is part of the
+    # setup. Always the latest NSIS: each Installua release targets it, and
+    # pinning an older one is how you get a failure that names the wrong cause.
     - name: Set up NSIS
       id: nsis
       uses: nsis-dev/setup-nsis@a33839d33d9fb676b90aa455b1a11fb207be059a # v1.1.1
       with:
-        version: ${{ inputs.nsis-version }}
         large-strings: ${{ inputs.large-strings }}
         advanced-logging: ${{ inputs.advanced-logging }}
 
