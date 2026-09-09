@@ -85,7 +85,7 @@ runs:
           echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
         fi
 
-    - name: Install Installua
+    - name: Set up Installua
       if: steps.cache.outputs.cache-hit != 'true'
       shell: bash
       env:
