@@ -1,0 +1,120 @@
+name: Setup Installua
+description: Set up Installua and the NSIS toolchain it compiles with
+
+branding:
+  color: blue
+  icon: package
+
+inputs:
+  version:
+    description: Installua version, e.g. 0.1.0, or "latest"
+    default: latest
+  nsis-version:
+    description: NSIS version, 3.12 or newer, or "latest"
+    default: latest
+  large-strings:
+    description: NSIS_MAX_STRLEN=8192
+    default: "false"
+  advanced-logging:
+    description: NSIS_CONFIG_LOG=yes
+    default: "false"
+
+outputs:
+  version:
+    description: Resolved Installua version
+    value: ${{ steps.vars.outputs.version }}
+  nsis-version:
+    description: Resolved NSIS version
+    value: ${{ steps.nsis.outputs.version }}
+  nsisdir:
+    description: NSIS installation directory
+    value: ${{ steps.nsis.outputs.nsisdir }}
+
+runs:
+  using: composite
+  steps:
+    # Ahead of the NSIS setup: a version this action rejects should fail before
+    # the expensive step, not after it
+    - name: Resolve version and paths
+      id: vars
+      shell: bash
+      env:
+        VERSION: ${{ inputs.version }}
+        NSIS_VERSION: ${{ inputs.nsis-version }}
+      run: |
+        set -euo pipefail
+
+        # Installua targets NSIS 3.12; on anything older makensis fails deep in
+        # the build with an error that does not name the real cause
+        if [ "$NSIS_VERSION" != latest ] && [ -n "$NSIS_VERSION" ]; then
+          if [ "$(printf '%s\n' "${NSIS_VERSION#v}" 3.12 | sort -V | head -1)" != 3.12 ]; then
+            echo "Installua requires NSIS 3.12 or newer, got $NSIS_VERSION" >&2
+            exit 1
+          fi
+        fi
+
+        # The cache key needs a concrete version, so "latest" gets resolved here
+        # rather than left to cargo. crates.io rejects requests without a User-Agent.
+        if [ "$VERSION" = latest ] || [ -z "$VERSION" ]; then
+          VERSION=$(curl -fsSL -H "User-Agent: idleberg/setup-installua" \
+            "https://crates.io/api/v1/crates/installua" \
+            | grep -o '"max_stable_version":"[^"]*"' | head -1 | cut -d'"' -f4)
+          [ -n "$VERSION" ] || { echo "could not resolve latest Installua version"; exit 1; }
+          echo "resolved latest Installua version: $VERSION"
+        fi
+        VERSION=${VERSION#v}
+
+        # Forward slashes on Windows: usable from bash and from PATH alike
+        prefix=$HOME/installua
+        [ "${{ runner.os }}" = Windows ] && prefix=$(cygpath -m "$HOME/installua")
+
+        echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+        echo "prefix=$prefix" >> "$GITHUB_OUTPUT"
+        echo "key=installua-${{ runner.os }}-${{ runner.arch }}-$VERSION" >> "$GITHUB_OUTPUT"
+
+    # Installua hands its output to makensis, so the compiler is part of the setup
+    - name: Set up NSIS
+      id: nsis
+      uses: nsis-dev/setup-nsis@a33839d33d9fb676b90aa455b1a11fb207be059a # v1.1.1
+      with:
+        version: ${{ inputs.nsis-version }}
+        large-strings: ${{ inputs.large-strings }}
+        advanced-logging: ${{ inputs.advanced-logging }}
+
+    # Compiling the CLI is the expensive part, and its output depends on nothing
+    # but the version, so one cache entry per OS, arch and version is enough
+    - name: Restore cached Installua build
+      id: cache
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/installua
+        key: ${{ steps.vars.outputs.key }}
+
+    - name: Set up Rust (if not already installed)
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      run: |
+        if ! command -v cargo &> /dev/null; then
+          curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --profile minimal
+          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+        fi
+
+    - name: Install Installua
+      if: steps.cache.outputs.cache-hit != 'true'
+      shell: bash
+      env:
+        VERSION: ${{ steps.vars.outputs.version }}
+        PREFIX: ${{ steps.vars.outputs.prefix }}
+      run: |
+        set -euo pipefail
+        export PATH="$HOME/.cargo/bin:$PATH"
+        cargo install installua --version "$VERSION" --root "$PREFIX"
+
+    - name: Export PATH and verify
+      shell: bash
+      env:
+        PREFIX: ${{ steps.vars.outputs.prefix }}
+      run: |
+        set -euo pipefail
+        echo "$PREFIX/bin" >> "$GITHUB_PATH"
+        "$PREFIX/bin/installua" --version
