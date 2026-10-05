@@ -62,7 +62,7 @@ runs:
     # pinning an older one is how you get a failure that names the wrong cause.
     - name: Set up NSIS
       id: nsis
-      uses: nsis-dev/setup-nsis@a33839d33d9fb676b90aa455b1a11fb207be059a # v1.1.1
+      uses: nsis-dev/setup-nsis@99783963764acafc24a5e3335ddfce26d03c20a2 # v1.2.1
       with:
         large-strings: ${{ inputs.large-strings }}
         advanced-logging: ${{ inputs.advanced-logging }}
